@@ -54,6 +54,13 @@ openclaw onboard --install-daemon
 
 The wizard installs the Gateway daemon (launchd/systemd user service) so it stays running.
 
+## Fork notes (Claude Code CLI)
+
+This fork routes **Anthropic models** through the **Claude Code CLI** instead of the embedded harness.
+Install the CLI and follow the local setup guide here:
+
+- `INSTALLATION.md`
+
 ## Quick start (TL;DR)
 
 Runtime: **Node ≥22**.
