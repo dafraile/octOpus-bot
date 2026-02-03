@@ -60,9 +60,9 @@ function createBaseRun(params: { runOverrides?: Partial<FollowupRun["run"]> }) {
       workspaceDir: "/tmp",
       config: {},
       skillsSnapshot: {},
-      provider: "anthropic",
-      model: "claude-opus",
-      authProfileId: "anthropic:openclaw",
+      provider: "openai",
+      model: "mock-1",
+      authProfileId: "openai:openclaw",
       authProfileIdSource: "manual",
       thinkLevel: "low",
       verboseLevel: "off",
@@ -103,9 +103,9 @@ describe("authProfileId fallback scoping", () => {
 
     const { typing, sessionCtx, resolvedQueue, followupRun } = createBaseRun({
       runOverrides: {
-        provider: "anthropic",
-        model: "claude-opus",
-        authProfileId: "anthropic:openclaw",
+        provider: "openai",
+        model: "mock-1",
+        authProfileId: "openai:openclaw",
         authProfileIdSource: "manual",
       },
     });
@@ -125,7 +125,7 @@ describe("authProfileId fallback scoping", () => {
       sessionStore: { [sessionKey]: sessionEntry },
       sessionKey,
       storePath: undefined,
-      defaultModel: "anthropic/claude-opus-4-5",
+      defaultModel: "openai/mock-1",
       agentCfgContextTokens: 100_000,
       resolvedVerboseLevel: "off",
       isNewSession: false,
