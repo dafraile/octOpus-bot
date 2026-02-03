@@ -61,8 +61,8 @@ function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: strin
       workspaceDir: "/tmp",
       config: {},
       skillsSnapshot: {},
-      provider: "anthropic",
-      model: "claude",
+      provider: "openai",
+      model: "mock-1",
       thinkLevel: "low",
       verboseLevel: "off",
       elevatedLevel: "off",
@@ -89,7 +89,7 @@ function createRun(params: { responseUsage: "tokens" | "full"; sessionKey: strin
     sessionCtx,
     sessionEntry,
     sessionKey: params.sessionKey,
-    defaultModel: "anthropic/claude-opus-4-5",
+    defaultModel: "openai/mock-1",
     resolvedVerboseLevel: "off",
     isNewSession: false,
     blockStreamingEnabled: false,
@@ -110,17 +110,17 @@ describe("runReplyAgent response usage footer", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "anthropic",
-          model: "claude",
+          provider: "openai",
+          model: "mock-1",
           usage: { input: 12, output: 3 },
         },
       },
     });
     runWithModelFallbackMock.mockImplementationOnce(
       async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("anthropic", "claude"),
-        provider: "anthropic",
-        model: "claude",
+        result: await run("openai", "mock-1"),
+        provider: "openai",
+        model: "mock-1",
       }),
     );
 
@@ -136,17 +136,17 @@ describe("runReplyAgent response usage footer", () => {
       payloads: [{ text: "ok" }],
       meta: {
         agentMeta: {
-          provider: "anthropic",
-          model: "claude",
+          provider: "openai",
+          model: "mock-1",
           usage: { input: 12, output: 3 },
         },
       },
     });
     runWithModelFallbackMock.mockImplementationOnce(
       async ({ run }: { run: (provider: string, model: string) => Promise<unknown> }) => ({
-        result: await run("anthropic", "claude"),
-        provider: "anthropic",
-        model: "claude",
+        result: await run("openai", "mock-1"),
+        provider: "openai",
+        model: "mock-1",
       }),
     );
 

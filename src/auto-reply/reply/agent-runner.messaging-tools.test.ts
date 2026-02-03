@@ -66,8 +66,8 @@ function createRun(
       workspaceDir: "/tmp",
       config: {},
       skillsSnapshot: {},
-      provider: "anthropic",
-      model: "claude",
+      provider: "openai",
+      model: "mock-1",
       thinkLevel: "low",
       verboseLevel: "off",
       elevatedLevel: "off",
@@ -94,7 +94,7 @@ function createRun(
     sessionCtx,
     sessionKey,
     storePath: opts.storePath,
-    defaultModel: "anthropic/claude-opus-4-5",
+    defaultModel: "openai/mock-1",
     resolvedVerboseLevel: "off",
     isNewSession: false,
     blockStreamingEnabled: false,
@@ -167,8 +167,8 @@ describe("runReplyAgent messaging tool suppression", () => {
       meta: {
         agentMeta: {
           usage: { input: 10, output: 5 },
-          model: "claude-opus-4-5",
-          provider: "anthropic",
+          model: "mock-1",
+          provider: "openai",
         },
       },
     });
@@ -178,6 +178,6 @@ describe("runReplyAgent messaging tool suppression", () => {
     expect(result).toBeUndefined();
     const store = loadSessionStore(storePath, { skipCache: true });
     expect(store[sessionKey]?.totalTokens ?? 0).toBeGreaterThan(0);
-    expect(store[sessionKey]?.model).toBe("claude-opus-4-5");
+    expect(store[sessionKey]?.model).toBe("mock-1");
   });
 });
