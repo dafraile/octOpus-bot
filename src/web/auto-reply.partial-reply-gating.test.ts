@@ -4,6 +4,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const runCliAgentMock = vi.fn();
+
+vi.mock("../agents/cli-runner.js", () => ({
+  runCliAgent: (params: unknown) => runCliAgentMock(params),
+}));
+
 vi.mock("../agents/pi-embedded.js", () => ({
   abortEmbeddedPiRun: vi.fn().mockReturnValue(false),
   isEmbeddedPiRunActive: vi.fn().mockReturnValue(false),
@@ -13,7 +19,6 @@ vi.mock("../agents/pi-embedded.js", () => ({
   resolveEmbeddedSessionLane: (key: string) => `session:${key.trim() || "main"}`,
 }));
 
-import type { OpenClawConfig } from "../config/config.js";
 import { runEmbeddedPiAgent } from "../agents/pi-embedded.js";
 import { getReplyFromConfig } from "../auto-reply/reply.js";
 import { resetInboundDedupe } from "../auto-reply/reply/inbound-dedupe.js";
@@ -322,6 +327,14 @@ describe("partial reply gating", () => {
         agentMeta: { sessionId: "s", provider: "p", model: "m" },
       },
     });
+    runCliAgentMock.mockResolvedValue({
+      payloads: [{ text: "ok" }],
+      meta: {
+        durationMs: 1,
+        agentMeta: { sessionId: "s", provider: "anthropic", model: "claude" },
+      },
+    });
+    setLoadConfigMock({});
 
     // Not self: should be blocked
     const blocked = await getReplyFromConfig(
@@ -331,10 +344,11 @@ describe("partial reply gating", () => {
         To: "whatsapp:+123",
       },
       undefined,
-      {},
+      undefined,
     );
     expect(blocked).toBeUndefined();
     expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
+    expect(runCliAgentMock).not.toHaveBeenCalled();
 
     // Self: should be allowed
     const allowed = await getReplyFromConfig(
@@ -344,9 +358,10 @@ describe("partial reply gating", () => {
         To: "whatsapp:+123",
       },
       undefined,
-      {},
+      undefined,
     );
     expect(allowed).toMatchObject({ text: "ok", audioAsVoice: false });
-    expect(runEmbeddedPiAgent).toHaveBeenCalledOnce();
+    expect(runCliAgentMock).toHaveBeenCalledOnce();
+    resetLoadConfigMock();
   });
 });

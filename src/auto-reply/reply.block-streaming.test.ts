@@ -86,7 +86,7 @@ describe("block streaming", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -145,7 +145,7 @@ describe("block streaming", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -194,7 +194,7 @@ describe("block streaming", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -252,7 +252,7 @@ describe("block streaming", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -294,7 +294,7 @@ describe("block streaming", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },

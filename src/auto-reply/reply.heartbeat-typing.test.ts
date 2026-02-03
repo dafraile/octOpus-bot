@@ -53,7 +53,7 @@ function makeCfg(home: string) {
   return {
     agents: {
       defaults: {
-        model: "anthropic/claude-opus-4-5",
+        model: "openai/mock-1",
         workspace: join(home, "openclaw"),
       },
     },

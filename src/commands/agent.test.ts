@@ -49,8 +49,8 @@ function mockConfig(
   configSpy.mockReturnValue({
     agents: {
       defaults: {
-        model: { primary: "anthropic/claude-opus-4-5" },
-        models: { "anthropic/claude-opus-4-5": {} },
+        model: { primary: "openai/mock-1" },
+        models: { "openai/mock-1": {} },
         workspace: path.join(home, "openclaw"),
         ...agentOverrides,
       },
@@ -265,9 +265,9 @@ describe("agentCommand", () => {
       mockConfig(home, store);
       vi.mocked(loadModelCatalog).mockResolvedValueOnce([
         {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
+          id: "mock-1",
+          name: "Mock 1",
+          provider: "openai",
           reasoning: true,
         },
       ]);

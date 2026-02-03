@@ -60,13 +60,24 @@ function makeCfg(
   const base: OpenClawConfig = {
     agents: {
       defaults: {
-        model: "anthropic/claude-opus-4-5",
+        model: "openai/mock-1",
         workspace: path.join(home, "openclaw"),
       },
     },
     session: { store: storePath, mainKey: "main" },
   } as OpenClawConfig;
-  return { ...base, ...overrides };
+  return {
+    ...base,
+    ...overrides,
+    agents: {
+      ...base.agents,
+      ...(overrides.agents ?? {}),
+      defaults: {
+        ...base.agents?.defaults,
+        ...(overrides.agents?.defaults ?? {}),
+      },
+    },
+  };
 }
 
 function makeJob(payload: CronJob["payload"]): CronJob {
@@ -398,9 +409,9 @@ describe("runCronIsolatedAgentTurn", () => {
       });
       vi.mocked(loadModelCatalog).mockResolvedValueOnce([
         {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
+          id: "mock-1",
+          name: "Mock 1",
+          provider: "openai",
         },
       ]);
 
@@ -408,9 +419,9 @@ describe("runCronIsolatedAgentTurn", () => {
         cfg: makeCfg(home, storePath, {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               models: {
-                "anthropic/claude-opus-4-5": { alias: "Opus" },
+                "openai/mock-1": { alias: "Mock" },
               },
             },
           },
@@ -432,8 +443,8 @@ describe("runCronIsolatedAgentTurn", () => {
         provider?: string;
         model?: string;
       };
-      expect(call?.provider).toBe("anthropic");
-      expect(call?.model).toBe("claude-opus-4-5");
+      expect(call?.provider).toBe("openai");
+      expect(call?.model).toBe("mock-1");
     });
   });
 
@@ -487,9 +498,9 @@ describe("runCronIsolatedAgentTurn", () => {
       });
       vi.mocked(loadModelCatalog).mockResolvedValueOnce([
         {
-          id: "claude-opus-4-5",
-          name: "Opus 4.5",
-          provider: "anthropic",
+          id: "mock-1",
+          name: "Mock 1",
+          provider: "openai",
           reasoning: true,
         },
       ]);
