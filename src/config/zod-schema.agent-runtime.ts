@@ -10,6 +10,7 @@ import {
 
 export const HeartbeatSchema = z
   .object({
+    mode: z.union([z.literal("fixed"), z.literal("adaptive")]).optional(),
     every: z.string().optional(),
     activeHours: z
       .object({

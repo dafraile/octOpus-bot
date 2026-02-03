@@ -39,7 +39,7 @@ const DEFAULT_CLAUDE_BACKEND: CliBackendConfig = {
     "{sessionId}",
   ],
   output: "json",
-  input: "arg",
+  input: "stdin",
   modelArg: "--model",
   modelAliases: CLAUDE_MODEL_ALIASES,
   sessionArg: "--session-id",
@@ -111,6 +111,7 @@ function mergeBackendConfig(base: CliBackendConfig, override?: CliBackendConfig)
 
 export function resolveCliBackendIds(cfg?: OpenClawConfig): Set<string> {
   const ids = new Set<string>([
+    normalizeBackendKey("anthropic"),
     normalizeBackendKey("claude-cli"),
     normalizeBackendKey("codex-cli"),
   ]);
@@ -129,8 +130,10 @@ export function resolveCliBackendConfig(
   const configured = cfg?.agents?.defaults?.cliBackends ?? {};
   const override = pickBackendConfig(configured, normalized);
 
-  if (normalized === "claude-cli") {
-    const merged = mergeBackendConfig(DEFAULT_CLAUDE_BACKEND, override);
+  if (normalized === "anthropic" || normalized === "claude-cli") {
+    const resolvedOverride =
+      override ?? pickBackendConfig(configured, normalizeBackendKey("claude-cli"));
+    const merged = mergeBackendConfig(DEFAULT_CLAUDE_BACKEND, resolvedOverride);
     const command = merged.command?.trim();
     if (!command) {
       return null;

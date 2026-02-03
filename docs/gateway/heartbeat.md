@@ -47,6 +47,7 @@ Example config:
   prompt includes a “Heartbeat” section and the run is flagged internally.
 - Active hours (`heartbeat.activeHours`) are checked in the configured timezone.
   Outside the window, heartbeats are skipped until the next tick inside the window.
+- Mode: `fixed` by default. Set `heartbeat.mode: "adaptive"` to let OpenClaw adjust cadence based on recent activity.
 
 ## What the heartbeat prompt is for
 

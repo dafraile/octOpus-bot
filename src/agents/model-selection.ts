@@ -49,6 +49,9 @@ export function normalizeProviderId(provider: string): string {
 
 export function isCliProvider(provider: string, cfg?: OpenClawConfig): boolean {
   const normalized = normalizeProviderId(provider);
+  if (normalized === "anthropic") {
+    return true;
+  }
   if (normalized === "claude-cli") {
     return true;
   }
