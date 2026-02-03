@@ -58,9 +58,10 @@ describe("runClaudeCliAgent", () => {
 
     expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
     const argv = runCommandWithTimeoutMock.mock.calls[0]?.[0] as string[];
+    const opts = runCommandWithTimeoutMock.mock.calls[0]?.[1] as { input?: string };
     expect(argv).toContain("claude");
     expect(argv).toContain("--session-id");
-    expect(argv).toContain("hi");
+    expect(opts?.input).toBe("hi");
   });
 
   it("uses --resume when a claude session id is provided", async () => {
@@ -85,9 +86,10 @@ describe("runClaudeCliAgent", () => {
 
     expect(runCommandWithTimeoutMock).toHaveBeenCalledTimes(1);
     const argv = runCommandWithTimeoutMock.mock.calls[0]?.[0] as string[];
+    const opts = runCommandWithTimeoutMock.mock.calls[0]?.[1] as { input?: string };
     expect(argv).toContain("--resume");
     expect(argv).toContain("c9d7b831-1c31-4d22-80b9-1e50ca207d4b");
-    expect(argv).toContain("hi");
+    expect(opts?.input).toBe("hi");
   });
 
   it("serializes concurrent claude-cli runs", async () => {

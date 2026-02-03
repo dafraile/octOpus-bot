@@ -158,18 +158,19 @@ export async function runPreparedReply(
     abortedLastRun,
   } = params;
   let currentSystemSent = systemSent;
+  const agentCfgSafe = agentCfg ?? ({} as AgentDefaults);
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
   const isGroupChat = sessionCtx.ChatType === "group";
   const wasMentioned = ctx.WasMentioned === true;
   const isHeartbeat = opts?.isHeartbeat === true;
   const heartbeatMode =
-    agentCfg.heartbeat?.mode ?? cfg.agents?.defaults?.heartbeat?.mode ?? "fixed";
+    agentCfgSafe.heartbeat?.mode ?? cfg.agents?.defaults?.heartbeat?.mode ?? "fixed";
   if (!isHeartbeat && heartbeatMode === "adaptive") {
     recordAdaptiveHumanActivity(agentId);
   }
   const typingMode = resolveTypingMode({
-    configured: sessionCfg?.typingMode ?? agentCfg?.typingMode,
+    configured: sessionCfg?.typingMode ?? agentCfgSafe.typingMode,
     isGroupChat,
     wasMentioned,
     isHeartbeat,
@@ -427,7 +428,7 @@ export async function runPreparedReply(
     sessionKey,
     storePath,
     defaultModel,
-    agentCfgContextTokens: agentCfg?.contextTokens,
+    agentCfgContextTokens: agentCfgSafe.contextTokens,
     resolvedVerboseLevel: resolvedVerboseLevel ?? "off",
     isNewSession,
     blockStreamingEnabled,

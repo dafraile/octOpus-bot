@@ -36,7 +36,7 @@ describe("RawBody directive parsing", () => {
   beforeEach(() => {
     vi.mocked(runEmbeddedPiAgent).mockReset();
     vi.mocked(loadModelCatalog).mockResolvedValue([
-      { id: "claude-opus-4-5", name: "Opus 4.5", provider: "anthropic" },
+      { id: "mock-1", name: "Mock 1", provider: "openai" },
     ]);
   });
 
@@ -63,7 +63,7 @@ describe("RawBody directive parsing", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -97,10 +97,10 @@ describe("RawBody directive parsing", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
               models: {
-                "anthropic/claude-opus-4-5": {},
+                "openai/mock-1": {},
               },
             },
           },
@@ -110,7 +110,7 @@ describe("RawBody directive parsing", () => {
       );
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
-      expect(text).toContain("anthropic/claude-opus-4-5");
+      expect(text).toContain("openai/mock-1");
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });
@@ -134,7 +134,7 @@ describe("RawBody directive parsing", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -172,7 +172,7 @@ describe("RawBody directive parsing", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
@@ -183,7 +183,7 @@ describe("RawBody directive parsing", () => {
 
       const text = Array.isArray(res) ? res[0]?.text : res?.text;
       expect(text).toContain("Session: agent:main:whatsapp:group:g1");
-      expect(text).toContain("anthropic/claude-opus-4-5");
+      expect(text).toContain("openai/mock-1");
       expect(runEmbeddedPiAgent).not.toHaveBeenCalled();
     });
   });
@@ -220,7 +220,7 @@ describe("RawBody directive parsing", () => {
         {
           agents: {
             defaults: {
-              model: "anthropic/claude-opus-4-5",
+              model: "openai/mock-1",
               workspace: path.join(home, "openclaw"),
             },
           },
