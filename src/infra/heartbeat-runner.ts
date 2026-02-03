@@ -40,6 +40,14 @@ import { CommandLane } from "../process/lanes.js";
 import { normalizeAgentId, toAgentStoreSessionKey } from "../routing/session-key.js";
 import { defaultRuntime, type RuntimeEnv } from "../runtime.js";
 import { formatErrorMessage } from "./errors.js";
+import {
+  assessAdaptiveInterest,
+  loadAdaptiveHeartbeatState,
+  recordAdaptiveBeat,
+  shouldAdaptiveBeat,
+  type AdaptiveAssessmentContext,
+  type AdaptiveHeartbeatState,
+} from "./heartbeat-adaptive.js";
 import { emitHeartbeatEvent, resolveIndicatorType } from "./heartbeat-events.js";
 import { resolveHeartbeatVisibility } from "./heartbeat-visibility.js";
 import {
@@ -70,6 +78,7 @@ export function setHeartbeatsEnabled(enabled: boolean) {
 }
 
 type HeartbeatConfig = AgentDefaultsConfig["heartbeat"];
+type HeartbeatMode = "fixed" | "adaptive";
 type HeartbeatAgent = {
   agentId: string;
   heartbeat?: HeartbeatConfig;
@@ -191,9 +200,11 @@ function isWithinActiveHours(
 type HeartbeatAgentState = {
   agentId: string;
   heartbeat?: HeartbeatConfig;
+  mode: HeartbeatMode;
   intervalMs: number;
   lastRunMs?: number;
   nextDueMs: number;
+  adaptiveState?: AdaptiveHeartbeatState;
 };
 
 export type HeartbeatRunner = {
@@ -254,8 +265,19 @@ export function resolveHeartbeatSummaryForAgent(
   }
 
   const merged = defaults || overrides ? { ...defaults, ...overrides } : undefined;
-  const every = merged?.every ?? defaults?.every ?? overrides?.every ?? DEFAULT_HEARTBEAT_EVERY;
-  const everyMs = resolveHeartbeatIntervalMs(cfg, undefined, merged);
+  const mode = merged?.mode ?? defaults?.mode ?? overrides?.mode;
+  const resolvedAgentId = normalizeAgentId(agentId ?? resolveDefaultAgentId(cfg));
+  const adaptiveState =
+    mode === "adaptive" ? loadAdaptiveHeartbeatState(resolvedAgentId) : undefined;
+  const adaptiveIntervalMs = adaptiveState
+    ? Math.max(1, adaptiveState.currentInterval) * 60 * 1000
+    : null;
+  const every =
+    mode === "adaptive"
+      ? `adaptive (${adaptiveState?.currentInterval ?? 0}m)`
+      : (merged?.every ?? defaults?.every ?? overrides?.every ?? DEFAULT_HEARTBEAT_EVERY);
+  const everyMs =
+    mode === "adaptive" ? adaptiveIntervalMs : resolveHeartbeatIntervalMs(cfg, undefined, merged);
   const prompt = resolveHeartbeatPromptText(
     merged?.prompt ?? defaults?.prompt ?? overrides?.prompt,
   );
@@ -491,23 +513,23 @@ export async function runHeartbeatOnce(opts: {
   const agentId = normalizeAgentId(opts.agentId ?? resolveDefaultAgentId(cfg));
   const heartbeat = opts.heartbeat ?? resolveHeartbeatConfig(cfg, agentId);
   if (!heartbeatsEnabled) {
-    return { status: "skipped", reason: "disabled" };
+    return { status: "skipped", reason: "disabled", outcome: "disabled" };
   }
   if (!isHeartbeatEnabledForAgent(cfg, agentId)) {
-    return { status: "skipped", reason: "disabled" };
+    return { status: "skipped", reason: "disabled", outcome: "disabled" };
   }
   if (!resolveHeartbeatIntervalMs(cfg, undefined, heartbeat)) {
-    return { status: "skipped", reason: "disabled" };
+    return { status: "skipped", reason: "disabled", outcome: "disabled" };
   }
 
   const startedAt = opts.deps?.nowMs?.() ?? Date.now();
   if (!isWithinActiveHours(cfg, heartbeat, startedAt)) {
-    return { status: "skipped", reason: "quiet-hours" };
+    return { status: "skipped", reason: "quiet-hours", outcome: "skipped" };
   }
 
   const queueSize = (opts.deps?.getQueueSize ?? getQueueSize)(CommandLane.Main);
   if (queueSize > 0) {
-    return { status: "skipped", reason: "requests-in-flight" };
+    return { status: "skipped", reason: "requests-in-flight", outcome: "skipped" };
   }
 
   // Skip heartbeat if HEARTBEAT.md exists but has no actionable content.
@@ -524,7 +546,7 @@ export async function runHeartbeatOnce(opts: {
         reason: "empty-heartbeat-file",
         durationMs: Date.now() - startedAt,
       });
-      return { status: "skipped", reason: "empty-heartbeat-file" };
+      return { status: "skipped", reason: "empty-heartbeat-file", outcome: "empty-heartbeat-file" };
     }
   } catch {
     // File doesn't exist or can't be read - proceed with heartbeat.
@@ -584,7 +606,7 @@ export async function runHeartbeatOnce(opts: {
       channel: delivery.channel !== "none" ? delivery.channel : undefined,
       accountId: delivery.accountId,
     });
-    return { status: "skipped", reason: "alerts-disabled" };
+    return { status: "skipped", reason: "alerts-disabled", outcome: "alerts-disabled" };
   }
 
   const heartbeatOkText = responsePrefix ? `${responsePrefix} ${HEARTBEAT_TOKEN}` : HEARTBEAT_TOKEN;
@@ -644,7 +666,7 @@ export async function runHeartbeatOnce(opts: {
         silent: !okSent,
         indicatorType: visibility.useIndicator ? resolveIndicatorType("ok-empty") : undefined,
       });
-      return { status: "ran", durationMs: Date.now() - startedAt };
+      return { status: "ran", durationMs: Date.now() - startedAt, outcome: "ok-empty" };
     }
 
     const ackMaxChars = resolveHeartbeatAckMaxChars(cfg, heartbeat);
@@ -678,7 +700,7 @@ export async function runHeartbeatOnce(opts: {
         silent: !okSent,
         indicatorType: visibility.useIndicator ? resolveIndicatorType("ok-token") : undefined,
       });
-      return { status: "ran", durationMs: Date.now() - startedAt };
+      return { status: "ran", durationMs: Date.now() - startedAt, outcome: "ok-token" };
     }
 
     const mediaUrls =
@@ -713,7 +735,7 @@ export async function runHeartbeatOnce(opts: {
         channel: delivery.channel !== "none" ? delivery.channel : undefined,
         accountId: delivery.accountId,
       });
-      return { status: "ran", durationMs: Date.now() - startedAt };
+      return { status: "ran", durationMs: Date.now() - startedAt, outcome: "duplicate" };
     }
 
     // Reasoning payloads are text-only; any attachments stay on the main reply.
@@ -733,7 +755,7 @@ export async function runHeartbeatOnce(opts: {
         hasMedia: mediaUrls.length > 0,
         accountId: delivery.accountId,
       });
-      return { status: "ran", durationMs: Date.now() - startedAt };
+      return { status: "ran", durationMs: Date.now() - startedAt, outcome: "no-target" };
     }
 
     if (!visibility.showAlerts) {
@@ -752,7 +774,7 @@ export async function runHeartbeatOnce(opts: {
         accountId: delivery.accountId,
         indicatorType: visibility.useIndicator ? resolveIndicatorType("sent") : undefined,
       });
-      return { status: "ran", durationMs: Date.now() - startedAt };
+      return { status: "ran", durationMs: Date.now() - startedAt, outcome: "alerts-disabled" };
     }
 
     const deliveryAccountId = delivery.accountId;
@@ -777,7 +799,7 @@ export async function runHeartbeatOnce(opts: {
           channel: delivery.channel,
           reason: readiness.reason,
         });
-        return { status: "skipped", reason: readiness.reason };
+        return { status: "skipped", reason: readiness.reason, outcome: "skipped" };
       }
     }
 
@@ -824,7 +846,7 @@ export async function runHeartbeatOnce(opts: {
       accountId: delivery.accountId,
       indicatorType: visibility.useIndicator ? resolveIndicatorType("sent") : undefined,
     });
-    return { status: "ran", durationMs: Date.now() - startedAt };
+    return { status: "ran", durationMs: Date.now() - startedAt, outcome: "sent" };
   } catch (err) {
     const reason = formatErrorMessage(err);
     emitHeartbeatEvent({
@@ -836,7 +858,7 @@ export async function runHeartbeatOnce(opts: {
       indicatorType: visibility.useIndicator ? resolveIndicatorType("failed") : undefined,
     });
     log.error(`heartbeat failed: ${reason}`, { error: reason });
-    return { status: "failed", reason };
+    return { status: "failed", reason, outcome: "failed" };
   }
 }
 
@@ -909,12 +931,34 @@ export function startHeartbeatRunner(opts: {
       if (!intervalMs) {
         continue;
       }
-      intervals.push(intervalMs);
+      const mode: HeartbeatMode = agent.heartbeat?.mode === "adaptive" ? "adaptive" : "fixed";
       const prevState = prevAgents.get(agent.agentId);
+      if (mode === "adaptive") {
+        const adaptiveState = loadAdaptiveHeartbeatState(agent.agentId, now);
+        const adaptiveIntervalMs = Math.max(1, adaptiveState.currentInterval) * 60 * 1000;
+        const nextDueMs =
+          Number.isFinite(adaptiveState.nextBeat) && adaptiveState.nextBeat > 0
+            ? adaptiveState.nextBeat
+            : resolveNextDue(now, adaptiveIntervalMs, prevState);
+        intervals.push(adaptiveIntervalMs);
+        nextAgents.set(agent.agentId, {
+          agentId: agent.agentId,
+          heartbeat: agent.heartbeat,
+          mode,
+          intervalMs: adaptiveIntervalMs,
+          lastRunMs: prevState?.lastRunMs,
+          nextDueMs,
+          adaptiveState,
+        });
+        continue;
+      }
+
+      intervals.push(intervalMs);
       const nextDueMs = resolveNextDue(now, intervalMs, prevState);
       nextAgents.set(agent.agentId, {
         agentId: agent.agentId,
         heartbeat: agent.heartbeat,
+        mode,
         intervalMs,
         lastRunMs: prevState?.lastRunMs,
         nextDueMs,
@@ -963,8 +1007,16 @@ export function startHeartbeatRunner(opts: {
     let ran = false;
 
     for (const agent of state.agents.values()) {
-      if (isInterval && now < agent.nextDueMs) {
-        continue;
+      if (isInterval) {
+        if (agent.mode === "adaptive") {
+          const adaptiveState = loadAdaptiveHeartbeatState(agent.agentId, now);
+          agent.adaptiveState = adaptiveState;
+          if (!shouldAdaptiveBeat(adaptiveState, now)) {
+            continue;
+          }
+        } else if (now < agent.nextDueMs) {
+          continue;
+        }
       }
 
       const res = await runOnce({
@@ -977,7 +1029,31 @@ export function startHeartbeatRunner(opts: {
       if (res.status === "skipped" && res.reason === "requests-in-flight") {
         return res;
       }
-      if (res.status !== "skipped" || res.reason !== "disabled") {
+      if (agent.mode === "adaptive") {
+        if (res.status === "skipped" && res.reason === "disabled") {
+          continue;
+        }
+        const adaptiveState = agent.adaptiveState ?? loadAdaptiveHeartbeatState(agent.agentId, now);
+        const context: AdaptiveAssessmentContext = {
+          foundReplies: res.outcome === "sent" ? 1 : 0,
+          foundInteresting: res.outcome === "sent",
+          foundNothing: res.outcome !== "sent",
+          error: res.status === "failed",
+          actions: [],
+        };
+        const assessment = assessAdaptiveInterest(adaptiveState, context);
+        const updated = recordAdaptiveBeat(
+          agent.agentId,
+          adaptiveState,
+          assessment,
+          reason ?? "interval",
+          now,
+        );
+        agent.adaptiveState = updated;
+        agent.intervalMs = Math.max(1, updated.currentInterval) * 60 * 1000;
+        agent.lastRunMs = now;
+        agent.nextDueMs = updated.nextBeat;
+      } else if (res.status !== "skipped" || res.reason !== "disabled") {
         agent.lastRunMs = now;
         agent.nextDueMs = now + agent.intervalMs;
       }
