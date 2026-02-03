@@ -214,7 +214,11 @@ describe("resolveHeartbeatIntervalMs", () => {
 
       expect(replySpy).not.toHaveBeenCalled();
       expect(sendWhatsApp).not.toHaveBeenCalled();
-      expect(result).toEqual({ status: "skipped", reason: "alerts-disabled" });
+      expect(result).toEqual({
+        status: "skipped",
+        reason: "alerts-disabled",
+        outcome: "alerts-disabled",
+      });
     } finally {
       replySpy.mockRestore();
       await fs.rm(tmpDir, { recursive: true, force: true });

@@ -21,6 +21,7 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
+import { recordAdaptiveHumanActivity } from "../../infra/heartbeat-adaptive.js";
 import { clearCommandLane, getQueueSize } from "../../process/command-queue.js";
 import { normalizeMainKey } from "../../routing/session-key.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
@@ -161,6 +162,11 @@ export async function runPreparedReply(
   const isGroupChat = sessionCtx.ChatType === "group";
   const wasMentioned = ctx.WasMentioned === true;
   const isHeartbeat = opts?.isHeartbeat === true;
+  const heartbeatMode =
+    agentCfg.heartbeat?.mode ?? cfg.agents?.defaults?.heartbeat?.mode ?? "fixed";
+  if (!isHeartbeat && heartbeatMode === "adaptive") {
+    recordAdaptiveHumanActivity(agentId);
+  }
   const typingMode = resolveTypingMode({
     configured: sessionCfg?.typingMode ?? agentCfg?.typingMode,
     isGroupChat,

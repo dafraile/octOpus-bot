@@ -1,7 +1,19 @@
+export type HeartbeatOutcome =
+  | "sent"
+  | "ok-token"
+  | "ok-empty"
+  | "duplicate"
+  | "empty-heartbeat-file"
+  | "alerts-disabled"
+  | "no-target"
+  | "disabled"
+  | "skipped"
+  | "failed";
+
 export type HeartbeatRunResult =
-  | { status: "ran"; durationMs: number }
-  | { status: "skipped"; reason: string }
-  | { status: "failed"; reason: string };
+  | { status: "ran"; durationMs: number; outcome?: HeartbeatOutcome }
+  | { status: "skipped"; reason: string; outcome?: HeartbeatOutcome }
+  | { status: "failed"; reason: string; outcome?: HeartbeatOutcome };
 
 export type HeartbeatWakeHandler = (opts: { reason?: string }) => Promise<HeartbeatRunResult>;
 

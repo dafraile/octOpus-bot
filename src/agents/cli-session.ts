@@ -13,6 +13,12 @@ export function getCliSessionId(
   if (fromMap?.trim()) {
     return fromMap.trim();
   }
+  if (normalized === "anthropic") {
+    const legacyCli = entry.cliSessionIds?.["claude-cli"];
+    if (legacyCli?.trim()) {
+      return legacyCli.trim();
+    }
+  }
   if (normalized === "claude-cli") {
     const legacy = entry.claudeCliSessionId?.trim();
     if (legacy) {

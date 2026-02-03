@@ -341,10 +341,10 @@ export function parseCliJson(raw: string, backend: CliBackendConfig): CliOutput 
   try {
     parsed = JSON.parse(trimmed);
   } catch {
-    return null;
+    return parseCliJsonl(raw, backend);
   }
   if (!isRecord(parsed)) {
-    return null;
+    return parseCliJsonl(raw, backend);
   }
   const sessionId = pickSessionId(parsed, backend);
   const usage = isRecord(parsed.usage) ? toUsage(parsed.usage) : undefined;
@@ -391,6 +391,19 @@ export function parseCliJsonl(raw: string, backend: CliBackendConfig): CliOutput
       const type = typeof item.type === "string" ? item.type.toLowerCase() : "";
       if (!type || type.includes("message")) {
         texts.push(item.text);
+      }
+    }
+    const type = typeof parsed.type === "string" ? parsed.type.toLowerCase() : "";
+    if (type === "assistant") {
+      const assistantText = collectText(parsed.message) || collectText(parsed.content);
+      if (assistantText) {
+        texts.push(assistantText);
+      }
+    }
+    if (type === "result") {
+      const resultText = collectText(parsed.result);
+      if (resultText) {
+        texts.push(resultText);
       }
     }
   }
