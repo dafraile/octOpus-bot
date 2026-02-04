@@ -158,7 +158,7 @@ export async function runPreparedReply(
     abortedLastRun,
   } = params;
   let currentSystemSent = systemSent;
-  const agentCfgSafe = agentCfg ?? ({} as AgentDefaults);
+  const agentCfgSafe: NonNullable<AgentDefaults> = agentCfg ?? {};
 
   const isFirstTurnInSession = isNewSession || !currentSystemSent;
   const isGroupChat = sessionCtx.ChatType === "group";
