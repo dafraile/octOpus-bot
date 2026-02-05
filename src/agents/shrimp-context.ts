@@ -101,8 +101,8 @@ export async function loadShrimpContextFiles(workspaceDir: string): Promise<Embe
   try {
     const memoryFiles = (await fs.readdir(memoryDir))
       .filter((entry) => entry.endsWith(".md"))
-      .sort()
-      .reverse()
+      .toSorted()
+      .toReversed()
       .slice(0, MAX_MEMORY_FILES);
 
     for (const file of memoryFiles) {

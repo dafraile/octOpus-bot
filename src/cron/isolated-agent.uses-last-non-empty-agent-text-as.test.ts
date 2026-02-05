@@ -71,10 +71,10 @@ function makeCfg(
     ...overrides,
     agents: {
       ...base.agents,
-      ...(overrides.agents ?? {}),
+      ...overrides.agents,
       defaults: {
         ...base.agents?.defaults,
-        ...(overrides.agents?.defaults ?? {}),
+        ...overrides.agents?.defaults,
       },
     },
   };

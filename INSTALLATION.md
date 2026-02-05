@@ -98,5 +98,6 @@ pnpm openclaw agent --message "ping"
 ```
 
 Troubleshooting:
+
 - If you see `Unknown CLI backend` or `claude` not found, fix `PATH` or set the absolute command as above.
 - For CLI output debugging: `OPENCLAW_CLAUDE_CLI_LOG_OUTPUT=1`.
