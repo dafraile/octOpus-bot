@@ -1,7 +1,11 @@
 import type { OpenClawConfig } from "../config/config.js";
-import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
 import { applyBootstrapHookOverrides } from "./bootstrap-hooks.js";
-import { buildBootstrapContextFiles, resolveBootstrapMaxChars } from "./pi-embedded-helpers.js";
+import type { EmbeddedContextFile } from "./pi-embedded-helpers.js";
+import {
+  buildBootstrapContextFiles,
+  resolveBootstrapMaxChars,
+  resolveBootstrapTotalMaxChars,
+} from "./pi-embedded-helpers.js";
 import { loadShrimpContextFiles } from "./shrimp-context.js";
 import {
   filterBootstrapFilesForSession,
@@ -31,6 +35,7 @@ export async function resolveBootstrapFilesForRun(params: {
     await loadWorkspaceBootstrapFiles(params.workspaceDir),
     sessionKey,
   );
+
   return applyBootstrapHookOverrides({
     files: bootstrapFiles,
     workspaceDir: params.workspaceDir,
@@ -55,6 +60,7 @@ export async function resolveBootstrapContextForRun(params: {
   const bootstrapFiles = await resolveBootstrapFilesForRun(params);
   const contextFiles = buildBootstrapContextFiles(bootstrapFiles, {
     maxChars: resolveBootstrapMaxChars(params.config),
+    totalMaxChars: resolveBootstrapTotalMaxChars(params.config),
     warn: params.warn,
   });
   const shrimpContextFiles = await loadShrimpContextFiles(params.workspaceDir);
